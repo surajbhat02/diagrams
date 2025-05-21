@@ -1,0 +1,115 @@
+@startuml
+left to right direction
+
+skinparam usecase {
+  BackgroundColor #FDFEFE
+  BorderColor Black
+  ArrowColor Black
+  ActorBorderColor Black
+  ActorBackgroundColor #D5F5E3
+  ActorFontStyle bold
+  UsecaseBorderColor #5DADE2
+  UsecaseBackgroundColor #EBF5FB
+  UsecaseFontColor Black
+  UsecaseFontSize 14
+}
+
+actor Owner as O #darkgreen
+actor SecondaryOwner as SO #darkgreen
+actor User as U #dodgerblue
+
+actor Approver as A #orange
+
+package "🧾 Accrual Workflow" {
+
+  package "▶ Initiation" {
+    usecase "Book Accrual" as UC1 <<workflow>>
+    usecase "Amend Accrual" as UC4 <<workflow>>
+    usecase "Create Settlement\n(Partial / Full)" as UC7 <<workflow>>
+    usecase "Reverse Settlement" as UC10 <<workflow>>
+    usecase "Cancel Accrual" as UC13 <<workflow>>
+  }
+
+  package "✔ Approval" {
+    usecase "Approve/Reject Accrual" as UC2
+    usecase "Approve/Reject Amendment" as UC5
+    usecase "Approve/Reject Settlement" as UC8
+    usecase "Approve/Reject Reversal" as UC11
+    usecase "Approval for Posted Cancellation" as UC14
+
+    usecase "View Approval Details" as UC16
+  }
+
+  package "📤 Posting" {
+    usecase "Post Accrual" as UC3
+    usecase "Post Amendment" as UC6
+    usecase "Post Settlement" as UC9
+    usecase "Post Reversal" as UC12
+    usecase "Post Cancellation" as UC15
+  }
+
+  package "🔍 Audit & History" {
+    usecase "View Accrual Audit History" as UC17
+  }
+
+  UC13 .[#orange].> UC14 : <<extend>>\nOnly if accrual was posted
+}
+
+package "📋 Template Management" {
+  usecase "Create Template" as T1
+  usecase "Update Own Template" as T2
+  usecase "Clone Another User’s Template" as T3
+}
+
+package "📊 Reporting" {
+  usecase "View GL Transactions" as R1
+  usecase "View Outstanding Accruals" as R2
+}
+
+' Link actors to usecases based on permissions
+O --> UC1
+O --> UC4
+O --> UC7
+O --> UC10
+O --> UC13
+O --> T1
+O --> T2
+O --> R1
+O --> R2
+
+SO --> UC1
+SO --> UC4
+SO --> UC7
+SO --> UC10
+SO --> UC13
+SO --> T1
+SO --> T2
+SO --> R1
+SO --> R2
+
+U --> UC7
+U --> T1
+U --> T2
+U --> T3
+U --> R1
+U --> R2
+
+A --> UC2
+A --> UC5
+A --> UC8
+A --> UC11
+A --> UC14
+A --> UC16
+
+U --> UC9
+U --> UC12
+U --> UC15
+U --> UC3
+U --> UC6
+
+U --> UC17
+
+rectangle "📘 Legend\n\n<<workflow>>: Action starts approval + posting process\n<<extend>>: Conditional step only when specific criteria met\n\nActors:\n👤 Owner/SecondaryOwner → Full accrual control\n👤 User → Settle, Post, View, Templates\n👤 Approver → Approves workflows\n\n🔁 Cancellation approval needed only if accrual was posted\n🔍 Audit History viewable by all\n👀 Approver sees detailed approval view" as Legend {
+}
+
+@enduml
