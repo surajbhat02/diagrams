@@ -1,0 +1,96 @@
+@startuml
+skinparam usecase {
+  BackgroundColor #FDFEFE
+  BorderColor Black
+  ArrowColor Black
+  ActorBorderColor Black
+  ActorBackgroundColor #D5F5E3
+  ActorFontStyle bold
+  UsecaseBorderColor #5DADE2
+  UsecaseBackgroundColor #EBF5FB
+  UsecaseFontColor Black
+  UsecaseFontSize 14
+}
+
+left to right direction
+
+actor Owner
+actor SecondaryOwner
+actor User
+actor Approver
+
+package "🧾 Accrual Workflow" {
+
+  package "▶ Initiation" {
+    usecase "Book Accrual" as UC1 <<workflow>>
+    usecase "Amend Accrual" as UC4 <<workflow>>
+    usecase "Create Settlement\n(Partial / Full)" as UC7 <<workflow>>
+    usecase "Reverse Settlement" as UC10 <<workflow>>
+    usecase "Cancel Accrual" as UC13 <<workflow>>
+  }
+
+  package "✔ Approval" {
+    usecase "Approve/Reject Accrual" as UC2
+    usecase "Approve/Reject Amendment" as UC5
+    usecase "Approve/Reject Settlement" as UC8
+    usecase "Approve/Reject Reversal" as UC11
+    usecase "Approval for Posted Cancellation" as UC14
+  }
+
+  package "📤 Posting" {
+    usecase "Post Accrual" as UC3
+    usecase "Post Amendment" as UC6
+    usecase "Post Settlement" as UC9
+    usecase "Post Reversal" as UC12
+    usecase "Post Cancellation" as UC15
+  }
+
+  UC13 .[#orange].> UC14 : <<extend>>\nOnly if accrual was posted
+
+  ' Actor connections to Initiation
+  Owner --> UC1
+  SecondaryOwner --> UC1
+  Owner --> UC4
+  SecondaryOwner --> UC4
+  User --> UC7
+  Owner --> UC10
+  SecondaryOwner --> UC10
+  Owner --> UC13
+  SecondaryOwner --> UC13
+
+  ' Actor connections to Approval
+  Approver --> UC2
+  Approver --> UC5
+  Approver --> UC8
+  Approver --> UC11
+  Approver --> UC14
+
+  ' Actor connections to Posting
+  User --> UC3
+  User --> UC6
+  User --> UC9
+  User --> UC12
+  User --> UC15
+}
+
+package "📋 Template Management" {
+  usecase "Create Template" as T1
+  usecase "Update Own Template" as T2
+  usecase "Clone Another User’s Template" as T3
+
+  User --> T1
+  User --> T2
+  User --> T3
+}
+
+package "📊 Reporting" {
+  usecase "View GL Transactions" as R1
+  usecase "View Outstanding Accruals" as R2
+
+  User --> R1
+  User --> R2
+}
+
+rectangle "📘 Legend\n\n<<workflow>>: Action starts approval + posting process\n<<extend>>: Conditional step added only when specific criteria met\n\nActors:\n👤 Owner/SecondaryOwner → Full accrual control\n👤 User → Settle, Post, View, Templates\n👤 Approver → Approves any workflow\n\n🔁 Approval for cancellation is triggered ONLY if accrual was posted" as Legend {
+}
+@enduml
