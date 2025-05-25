@@ -1,0 +1,645 @@
+import React, { useState, useEffect, useMemo } from 'react';
+
+// Mock Salt Design System Components (since we can't import the actual library)
+// In a real project, these would be imported from @salt-ds/core
+
+// Base Salt Components
+const SaltProvider = ({ children, theme = 'light' }) => (
+  <div className={`salt-provider salt-theme-${theme}`} style={{ minHeight: '100vh' }}>
+    {children}
+  </div>
+);
+
+const Card = ({ children, className = '', ...props }) => (
+  <div className={`salt-card bg-white border border-gray-200 rounded-lg shadow-sm ${className}`} {...props}>
+    {children}
+  </div>
+);
+
+const Button = ({ children, variant = 'primary', size = 'medium', disabled = false, onClick, className = '', ...props }) => {
+  const baseClasses = 'salt-button inline-flex items-center justify-center font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2';
+  const variantClasses = {
+    primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
+    secondary: 'bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500',
+    cta: 'bg-orange-600 text-white hover:bg-orange-700 focus:ring-orange-500'
+  };
+  const sizeClasses = {
+    small: 'px-3 py-1.5 text-sm',
+    medium: 'px-4 py-2 text-sm',
+    large: 'px-6 py-3 text-base'
+  };
+
+  return (
+    <button
+      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+      onClick={onClick}
+      disabled={disabled}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
+const Input = ({ label, placeholder, value, onChange, type = 'text', className = '', error, ...props }) => (
+  <div className={`salt-input-group ${className}`}>
+    {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
+    <input
+      type={type}
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      className={`salt-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${error ? 'border-red-500' : ''}`}
+      {...props}
+    />
+    {error && <span className="text-sm text-red-600 mt-1">{error}</span>}
+  </div>
+);
+
+const Dropdown = ({ label, value, onChange, options, placeholder = 'Select...', className = '' }) => (
+  <div className={`salt-dropdown ${className}`}>
+    {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
+    <select
+      value={value}
+      onChange={onChange}
+      className="salt-select w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+    >
+      <option value="">{placeholder}</option>
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  </div>
+);
+
+const Badge = ({ children, variant = 'primary', size = 'medium' }) => {
+  const variantClasses = {
+    primary: 'bg-blue-100 text-blue-800',
+    success: 'bg-green-100 text-green-800',
+    warning: 'bg-yellow-100 text-yellow-800',
+    error: 'bg-red-100 text-red-800',
+    neutral: 'bg-gray-100 text-gray-800'
+  };
+  const sizeClasses = {
+    small: 'px-2 py-1 text-xs',
+    medium: 'px-2.5 py-1 text-sm'
+  };
+
+  return (
+    <span className={`salt-badge inline-flex items-center rounded-full font-medium ${variantClasses[variant]} ${sizeClasses[size]}`}>
+      {children}
+    </span>
+  );
+};
+
+const ProgressBar = ({ value = 0, max = 100, variant = 'primary', size = 'medium', showLabel = false }) => {
+  const percentage = Math.min((value / max) * 100, 100);
+  const variantClasses = {
+    primary: 'bg-blue-600',
+    success: 'bg-green-600',
+    warning: 'bg-yellow-600',
+    error: 'bg-red-600'
+  };
+  const sizeClasses = {
+    small: 'h-1',
+    medium: 'h-2',
+    large: 'h-3'
+  };
+
+  return (
+    <div className="salt-progress-bar">
+      <div className={`w-full bg-gray-200 rounded-full ${sizeClasses[size]}`}>
+        <div
+          className={`${sizeClasses[size]} rounded-full transition-all duration-300 ${variantClasses[variant]}`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+      {showLabel && (
+        <span className="text-sm text-gray-600 mt-1">{Math.round(percentage)}%</span>
+      )}
+    </div>
+  );
+};
+
+const Table = ({ children, className = '' }) => (
+  <div className={`salt-table overflow-hidden ${className}`}>
+    <table className="min-w-full divide-y divide-gray-200">
+      {children}
+    </table>
+  </div>
+);
+
+const TableHead = ({ children }) => (
+  <thead className="salt-table-head bg-gray-50">
+    {children}
+  </thead>
+);
+
+const TableBody = ({ children }) => (
+  <tbody className="salt-table-body bg-white divide-y divide-gray-200">
+    {children}
+  </tbody>
+);
+
+const TableRow = ({ children, hover = true, className = '' }) => (
+  <tr className={`salt-table-row ${hover ? 'hover:bg-gray-50' : ''} ${className}`}>
+    {children}
+  </tr>
+);
+
+const TableCell = ({ children, header = false, className = '' }) => {
+  const baseClasses = header
+    ? 'salt-table-header px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'
+    : 'salt-table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900';
+
+  const Tag = header ? 'th' : 'td';
+
+  return (
+    <Tag className={`${baseClasses} ${className}`}>
+      {children}
+    </Tag>
+  );
+};
+
+const FlexLayout = ({ children, direction = 'row', justify = 'start', align = 'start', gap = 4, className = '' }) => {
+  const directionClass = direction === 'column' ? 'flex-col' : 'flex-row';
+  const justifyClasses = {
+    start: 'justify-start',
+    center: 'justify-center',
+    end: 'justify-end',
+    between: 'justify-between',
+    around: 'justify-around'
+  };
+  const alignClasses = {
+    start: 'items-start',
+    center: 'items-center',
+    end: 'items-end',
+    stretch: 'items-stretch'
+  };
+
+  return (
+    <div className={`salt-flex flex ${directionClass} ${justifyClasses[justify]} ${alignClasses[align]} gap-${gap} ${className}`}>
+      {children}
+    </div>
+  );
+};
+
+const GridLayout = ({ children, columns = 1, gap = 4, className = '' }) => (
+  <div className={`salt-grid grid grid-cols-${columns} gap-${gap} ${className}`}>
+    {children}
+  </div>
+);
+
+const Text = ({ children, variant = 'body', weight = 'regular', color = 'primary', className = '' }) => {
+  const variantClasses = {
+    h1: 'text-3xl',
+    h2: 'text-2xl',
+    h3: 'text-xl',
+    h4: 'text-lg',
+    body: 'text-base',
+    small: 'text-sm',
+    caption: 'text-xs'
+  };
+  const weightClasses = {
+    light: 'font-light',
+    regular: 'font-normal',
+    medium: 'font-medium',
+    semibold: 'font-semibold',
+    bold: 'font-bold'
+  };
+  const colorClasses = {
+    primary: 'text-gray-900',
+    secondary: 'text-gray-600',
+    tertiary: 'text-gray-400',
+    inverse: 'text-white'
+  };
+
+  return (
+    <span className={`salt-text ${variantClasses[variant]} ${weightClasses[weight]} ${colorClasses[color]} ${className}`}>
+      {children}
+    </span>
+  );
+};
+
+// Icons (using simple SVG representations of Salt icons)
+const IconButton = ({ children, onClick, variant = 'secondary', size = 'medium', className = '' }) => (
+  <Button variant={variant} size={size} onClick={onClick} className={`salt-icon-button p-2 ${className}`}>
+    {children}
+  </Button>
+);
+
+const SearchIcon = () => (
+  <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+  </svg>
+);
+
+const RefreshIcon = () => (
+  <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+    <path fillRule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+  </svg>
+);
+
+const DownloadIcon = () => (
+  <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+  </svg>
+);
+
+const MoreIcon = () => (
+  <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+    <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
+  </svg>
+);
+
+// Types
+interface Job {
+  id: string;
+  datasetName: string;
+  type: string;
+  status: 'Completed' | 'Running' | 'Failed';
+  progress: number;
+  startTime: string;
+  duration: string;
+  dependentJobs?: SubJob[];
+}
+
+interface SubJob {
+  id: string;
+  type: string;
+  status: 'Completed' | 'Running' | 'Failed';
+  progress: number;
+  startTime: string;
+  duration: string;
+}
+
+interface JobStats {
+  total: number;
+  completed: number;
+  running: number;
+  failed: number;
+}
+
+// Mock Data and Utilities
+const mockJobsData: Job[] = [
+  {
+    id: 'JOB-2025-001',
+    datasetName: 'Customer Database',
+    type: 'Customer Data',
+    status: 'Completed',
+    progress: 100,
+    startTime: '2025-04-22 10:00',
+    duration: '45m 30s',
+    dependentJobs: [
+      {
+        id: 'SUB-001',
+        type: 'Validation',
+        status: 'Completed',
+        progress: 100,
+        startTime: '2025-04-22 10:15',
+        duration: '15m 20s'
+      }
+    ]
+  },
+  {
+    id: 'JOB-2025-002',
+    datasetName: 'Transaction Log',
+    type: 'Transaction Data',
+    status: 'Running',
+    progress: 65,
+    startTime: '2025-04-22 11:30',
+    duration: '30m 15s'
+  },
+  {
+    id: 'JOB-2025-003',
+    datasetName: 'User Analytics',
+    type: 'Analytics Data',
+    status: 'Failed',
+    progress: 0,
+    startTime: '2025-04-22 09:00',
+    duration: '0m 0s'
+  }
+];
+
+const calculateStats = (jobs: Job[]): JobStats => {
+  return jobs.reduce((acc, job) => {
+    acc.total++;
+    if (job.status === 'Completed') acc.completed++;
+    else if (job.status === 'Running') acc.running++;
+    else if (job.status === 'Failed') acc.failed++;
+    return acc;
+  }, { total: 0, completed: 0, running: 0, failed: 0 });
+};
+
+// Custom Hooks
+const useJobs = () => {
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      setLoading(true);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setJobs(mockJobsData);
+      setLoading(false);
+    };
+
+    fetchJobs();
+  }, []);
+
+  return { jobs, loading, refetch: () => setJobs([...jobs]) };
+};
+
+// Feature Components
+const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case 'Completed': return 'success';
+      case 'Running': return 'primary';
+      case 'Failed': return 'error';
+      default: return 'neutral';
+    }
+  };
+
+  return <Badge variant={getStatusVariant(status)}>{status}</Badge>;
+};
+
+const JobProgressBar: React.FC<{ progress: number; status: string }> = ({ progress, status }) => {
+  const getProgressVariant = (status: string) => {
+    switch (status) {
+      case 'Completed': return 'success';
+      case 'Running': return 'primary';
+      case 'Failed': return 'error';
+      default: return 'primary';
+    }
+  };
+
+  return (
+    <FlexLayout align="center" gap={2}>
+      <ProgressBar value={progress} variant={getProgressVariant(status)} />
+      <Text variant="small" color="secondary">{progress}%</Text>
+    </FlexLayout>
+  );
+};
+
+const StatsCard: React.FC<{ label: string; value: number; variant?: string }> = ({
+  label, value, variant = 'primary'
+}) => (
+  <Card className="p-6">
+    <FlexLayout direction="column" gap={2}>
+      <Text variant="small" color="secondary" weight="medium">{label}</Text>
+      <Text variant="h2" weight="semibold">{value.toLocaleString()}</Text>
+    </FlexLayout>
+  </Card>
+);
+
+const FilterSection: React.FC<{
+  filters: any;
+  onFiltersChange: (filters: any) => void;
+}> = ({ filters, onFiltersChange }) => {
+  const datasetOptions = [
+    { value: 'All Types', label: 'All Types' },
+    { value: 'Customer Data', label: 'Customer Data' },
+    { value: 'Transaction Data', label: 'Transaction Data' },
+    { value: 'Analytics Data', label: 'Analytics Data' }
+  ];
+
+  const statusOptions = [
+    { value: 'All Status', label: 'All Status' },
+    { value: 'Completed', label: 'Completed' },
+    { value: 'Running', label: 'Running' },
+    { value: 'Failed', label: 'Failed' }
+  ];
+
+  return (
+    <Card className="p-4 mb-6">
+      <GridLayout columns={4} gap={4}>
+        <Dropdown
+          label="Dataset Type"
+          value={filters.datasetType}
+          onChange={(e) => onFiltersChange({ ...filters, datasetType: e.target.value })}
+          options={datasetOptions}
+        />
+        <Dropdown
+          label="Status"
+          value={filters.status}
+          onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
+          options={statusOptions}
+        />
+        <Input
+          label="Date Range"
+          type="date"
+          value={filters.dateRange}
+          onChange={(e) => onFiltersChange({ ...filters, dateRange: e.target.value })}
+        />
+        <div className="relative">
+          <Input
+            label="Search"
+            placeholder="Search jobs..."
+            value={filters.searchTerm}
+            onChange={(e) => onFiltersChange({ ...filters, searchTerm: e.target.value })}
+          />
+          <div className="absolute right-3 top-8 text-gray-400">
+            <SearchIcon />
+          </div>
+        </div>
+      </GridLayout>
+    </Card>
+  );
+};
+
+const JobRow: React.FC<{ job: Job; onRefresh: () => void }> = ({ job, onRefresh }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <>
+      <TableRow>
+        <TableCell>{job.id}</TableCell>
+        <TableCell>{job.datasetName}</TableCell>
+        <TableCell>{job.type}</TableCell>
+        <TableCell>
+          <StatusBadge status={job.status} />
+        </TableCell>
+        <TableCell>
+          <JobProgressBar progress={job.progress} status={job.status} />
+        </TableCell>
+        <TableCell>{job.startTime}</TableCell>
+        <TableCell>{job.duration}</TableCell>
+        <TableCell>
+          <FlexLayout align="center" gap={2}>
+            <IconButton onClick={onRefresh} variant="secondary" size="small">
+              <RefreshIcon />
+            </IconButton>
+            {job.dependentJobs && (
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() => setExpanded(!expanded)}
+              >
+                {expanded ? '−' : '+'}
+              </Button>
+            )}
+            <IconButton variant="secondary" size="small">
+              <MoreIcon />
+            </IconButton>
+          </FlexLayout>
+        </TableCell>
+      </TableRow>
+      {expanded && job.dependentJobs && job.dependentJobs.map((subJob) => (
+        <TableRow key={subJob.id} className="bg-gray-50">
+          <TableCell className="pl-12">{subJob.id}</TableCell>
+          <TableCell>Dependent Job</TableCell>
+          <TableCell>{subJob.type}</TableCell>
+          <TableCell>
+            <StatusBadge status={subJob.status} />
+          </TableCell>
+          <TableCell>
+            <JobProgressBar progress={subJob.progress} status={subJob.status} />
+          </TableCell>
+          <TableCell>{subJob.startTime}</TableCell>
+          <TableCell>{subJob.duration}</TableCell>
+          <TableCell>
+            <IconButton variant="secondary" size="small">
+              <MoreIcon />
+            </IconButton>
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+};
+
+const EnrichmentJobsTable: React.FC<{ jobs: Job[]; onRefresh: () => void }> = ({ jobs, onRefresh }) => (
+  <Card>
+    <div className="px-6 py-4 border-b border-gray-200">
+      <FlexLayout justify="between" align="center">
+        <Text variant="h3" weight="medium">Enrichment Jobs</Text>
+        <Button variant="primary">
+          <DownloadIcon />
+          <span className="ml-2">Export</span>
+        </Button>
+      </FlexLayout>
+    </div>
+    <Table>
+      <TableHead>
+        <TableRow>
+          <TableCell header>Job ID</TableCell>
+          <TableCell header>Dataset Name</TableCell>
+          <TableCell header>Type</TableCell>
+          <TableCell header>Status</TableCell>
+          <TableCell header>Progress</TableCell>
+          <TableCell header>Start Time</TableCell>
+          <TableCell header>Duration</TableCell>
+          <TableCell header>Actions</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {jobs.map((job) => (
+          <JobRow key={job.id} job={job} onRefresh={onRefresh} />
+        ))}
+      </TableBody>
+    </Table>
+  </Card>
+);
+
+// Main App Component
+const DatasetEnrichmentMonitor: React.FC = () => {
+  const { jobs, loading, refetch } = useJobs();
+  const [filters, setFilters] = useState({
+    datasetType: 'All Types',
+    status: 'All Status',
+    dateRange: '',
+    searchTerm: ''
+  });
+
+  const stats = useMemo(() => {
+    const baseStats = calculateStats(jobs);
+    return {
+      total: 1284,
+      completed: 892,
+      running: 156,
+      failed: 236
+    };
+  }, [jobs]);
+
+  const filteredJobs = useMemo(() => {
+    return jobs.filter(job => {
+      const matchesType = filters.datasetType === 'All Types' || job.type === filters.datasetType;
+      const matchesStatus = filters.status === 'All Status' || job.status === filters.status;
+      const matchesSearch = !filters.searchTerm ||
+        job.datasetName.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+        job.id.toLowerCase().includes(filters.searchTerm.toLowerCase());
+
+      return matchesType && matchesStatus && matchesSearch;
+    });
+  }, [jobs, filters]);
+
+  if (loading) {
+    return (
+      <SaltProvider>
+        <div className="min-h-screen flex items-center justify-center">
+          <FlexLayout direction="column" align="center" gap={4}>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <Text color="secondary">Loading Dataset Enrichment Monitor...</Text>
+          </FlexLayout>
+        </div>
+      </SaltProvider>
+    );
+  }
+
+  return (
+    <SaltProvider theme="light">
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <FlexLayout justify="between" align="center" className="py-4">
+              <FlexLayout align="center" gap={3}>
+                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <div className="w-4 h-4 bg-white rounded-sm opacity-90"></div>
+                </div>
+                <Text variant="h4" weight="semibold">Dataset Enrichment Monitor</Text>
+              </FlexLayout>
+              <FlexLayout align="center" gap={3}>
+                <IconButton variant="secondary">
+                  <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+                  </svg>
+                </IconButton>
+                <IconButton variant="secondary">
+                  <div className="w-5 h-5 bg-gray-300 rounded-full"></div>
+                </IconButton>
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <Text variant="small" color="inverse" weight="medium">JD</Text>
+                </div>
+              </FlexLayout>
+            </FlexLayout>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Stats Cards */}
+          <GridLayout columns={4} gap={6} className="mb-8">
+            <StatsCard label="Total Jobs" value={stats.total} />
+            <StatsCard label="Completed" value={stats.completed} variant="success" />
+            <StatsCard label="Running" value={stats.running} variant="primary" />
+            <StatsCard label="Failed" value={stats.failed} variant="error" />
+          </GridLayout>
+
+          {/* Filters */}
+          <FilterSection filters={filters} onFiltersChange={setFilters} />
+
+          {/* Jobs Table */}
+          <EnrichmentJobsTable jobs={filteredJobs} onRefresh={refetch} />
+        </main>
+      </div>
+    </SaltProvider>
+  );
+};
+
+export default DatasetEnrichmentMonitor;
