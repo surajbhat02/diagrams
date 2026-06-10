@@ -1,0 +1,62 @@
+I'm building a Report Onboarding configuration editor. 
+The UI must strictly follow the SALT design system 
+(JPMorgan's open-source React component library).
+
+## Stack
+- React + TypeScript
+- SALT Design System (@salt-ds/core, @salt-ds/lab, @salt-ds/icons)
+- No custom CSS except layout grid — every interactive element 
+  must be a SALT component
+
+## Layout
+Two-pane layout, 240px left / flex-1 right:
+- Left: NavigationItem tree (saltNavigationItem) for the config 
+  hierarchy — ResourceGroup → Resources[] → Views[] → Segments[]
+- Right: context-sensitive form panel for the selected node
+
+## Component mapping (enforce these strictly)
+- Tree nodes          → SaltNavigationItem with SaltIcon
+- All text inputs     → SaltInput
+- Dropdowns           → SaltDropdown or SaltComboBox
+- Date fields         → SaltDatePicker
+- Tabs per node       → SaltTabBar + SaltTab
+- Filter rows         → SaltStackLayout with SaltInput + SaltButton
+- Save/action buttons → SaltButton (variant="cta" for primary)
+- Status badges       → SaltPill
+- Section headings    → SaltText variant="label"
+- Raw JSON toggle     → SaltSwitch
+- JSON textarea       → SaltFormField wrapping a plain <textarea> 
+                        with SALT form field styling
+- Breadcrumb          → SaltBreadcrumb
+
+## Data model
+The config has this shape:
+[paste your actual JSON structure here — the real one, 
+not a simplified version]
+
+## Node types and their tabs
+ResourceGroup tabs: Identity | Group config | Parameters | Filters
+Resource tabs:      Identity | Filters | Views
+View tabs:          Identity | View config | Segments  
+Segment tabs:       Identity | Segment config
+
+## Behaviour rules
+1. Selecting a tree node updates the right panel — no page 
+   navigation, this is a single-page editor
+2. Raw JSON toggle shows the selected node's JSON only, 
+   not the full config
+3. Adding a child node (view to resource, segment to view) 
+   opens a SaltDialog with a minimal creation form
+4. Filters are an editable array — add/remove rows inline
+5. Config fields (viewConfig, segmentConfig) are dynamic 
+   key-value pairs — render as editable rows, not hardcoded fields
+6. Unsaved changes show a SaltPill "Unsaved" in the header
+7. Validation: required fields (id, name) block save with 
+   SaltFormField validationStatus="error"
+
+## What NOT to do
+- Do not use plain HTML inputs, divs styled as buttons, 
+  or custom color variables
+- Do not invent a component that SALT already has
+- Do not hardcode the config shape — the right panel must 
+  render dynamically from the node's data
